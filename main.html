@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/4.2.0/redux.min.js"></script>
+  </head>
+  <body>
+    <div id="subject"></div>
+    <div id="toc"></div>
+    <div id="control"></div>
+    <div id="content"></div>
+    <script>
+      function reducer(state, action) {
+        if (state === undefined) {
+          return {
+            max_id: 2,
+            mode: "create",
+            selected_id: 1,
+            content: [
+              { id: 1, title: "html", description: "html is..." },
+              { id: 2, title: "css", description: "css is..." },
+            ],
+          };
+        }
+
+        if (action.type === "SELECT") {
+          return { ...state, selected_id: action.id };
+        } else if (action.type === "CREATE") {
+          return {
+            ...state,
+            mode: "read",
+            content: [
+              ...state.content,
+              {
+                id: state.max_id + 1,
+                title: action.title,
+                description: action.description,
+              },
+            ],
+          };
+        }
+      }
+      const store = Redux.createStore(reducer);
+
+      function subject() {
+        document.querySelector("#subject").innerHTML = `
+            <header>
+                <h1>Web</h1>
+                Hello, Web!
+            </header>
+        `;
+      }
+      subject();
+
+      function TOC() {
+        const state = store.getState();
+        let i = 0;
+        let liTags = "";
+
+        while (i < state.content.length) {
+          liTags += `
+                <li>
+                    <a
+                        onclick="
+                            event.preventDefault();
+                            const action = { type:'SELECT', id:${state.content[i].id} };
+                            store.dispatch(action);
+                        "
+                        href="${state.content[i].id}"
+                    >
+                        ${state.content[i].title}
+                    </a>
+                </li>
+            `;
+          i += 1;
+        }
+        document.querySelector("#toc").innerHTML = `
+            <nav>
+                <ol>${liTags}</ol>
+            </nav>
+        `;
+      }
+      TOC();
+      store.subscribe(TOC);
+
+      function control() {
+        document.querySelector("#control").innerHTML = `
+            <ul>
+                <li>
+                    <a
+                        onclick="
+                            event.preventDefault();
+
+                        "
+                        href="/create"
+                    >
+                        create
+                    </a>
+                </li>
+                <li>
+                    <input type="button" value="delete" />
+                </li>
+            </ul>
+        `;
+      }
+      control();
+
+      function article() {
+        const state = store.getState();
+        if (state.mode === "create") {
+          document.querySelector("#content").innerHTML = `
+            <article>
+                <form onsubmit="
+                    event.preventDefault();
+                    const title = this.title.value;
+                    const description = this.description.value;
+                    store.dispatch({
+                        type:'CREATE',
+                        title,
+                        description
+                    })
+                ">
+                    <p>
+                        <input type="text" name="title" placeholder="title">
+                    </p>
+                    <p>
+                        <textarea name="description" placeholder="description"></textarea>
+                    </p>
+                    <p>
+                        <input type="submit">
+                    </p>
+                </form>
+            </article>
+            `;
+        } else if (state.mode === "read") {
+          let i = 0;
+          let aTitle, aDescription;
+          while (i < state.content.length) {
+            if (state.content[i].id === state.selected_id) {
+              aTitle = state.content[i].title;
+              aDescription = state.content[i].description;
+              break;
+            }
+
+            i += 1;
+          }
+          document.querySelector("#content").innerHTML = `
+                <article>
+                    <h2>${aTitle}</h2>
+                    ${aDescription}
+                </article>
+            `;
+        }
+      }
+      article();
+      store.subscribe(article);
+    </script>
+  </body>
+</html>
